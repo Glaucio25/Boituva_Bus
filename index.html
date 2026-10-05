@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotas e pontos turísticos de Boituva</title>
+    <link rel="stylesheet" href="assets/leaflet/leaflet.css">
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --surface: #ffffff;
+            --primary: #1d4ed8;
+            --primary-dark: #163ea8;
+            --text: #1f2937;
+            --muted: #4b5563;
+            --border: #d1d5db;
+            --success: #0f766e;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+        .page-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 28px 24px;
+            border-radius: 18px;
+            margin-bottom: 24px;
+        }
+        .page-header h1 { margin: 0 0 8px; }
+        .page-header p { margin: 0; opacity: 0.95; }
+        .panel, .tourist-list-panel, .map-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        form { display: grid; gap: 14px; }
+        label { font-weight: 700; }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            min-height: 48px;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            min-height: 48px;
+        }
+        button:hover, button:focus-visible {
+            background: var(--primary-dark);
+            outline: 3px solid rgba(29, 78, 216, 0.25);
+        }
+        .status { margin: 12px 0 0; color: var(--success); font-weight: 600; }
+        .result-card {
+            margin-top: 24px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: #f8fafc;
+            padding: 20px;
+        }
+        .result-card h3 { margin-top: 0; }
+        .result-card h4 { margin-bottom: 4px; }
+        .result-card p { margin: 6px 0; }
+        .divider { border-top: 1px solid var(--border); margin: 16px 0; }
+        .route-list { margin: 10px 0 0; padding-left: 20px; }
+        .tourist-search { margin-top: 18px; }
+        .tourist-search-label { margin: 0; font-weight: 700; }
+        .tourist-search-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 0;
+            padding: 0;
+        }
+        .tourist-search-list button {
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid #c7d7ff;
+            background: #e0ebff;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+        .tourist-search-list button:hover, .tourist-search-list button:focus-visible { background: #cfe0ff; }
+        .tourist-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .tourist-list-panel, .map-panel { padding: 20px; }
+        .tourist-list-panel h2, .map-panel h2 { margin-top: 0; }
+        .tourist-list {
+            list-style: none;
+            padding: 0;
+            margin: 12px 0 0;
+            display: grid;
+            gap: 10px;
+        }
+        .tourist-list button {
+            width: 100%;
+            text-align: left;
+            background: #e0ebff;
+            color: var(--text);
+            border: 1px solid #c7d7ff;
+            padding: 12px 14px;
+            min-height: 44px;
+        }
+        .tourist-list button:hover, .tourist-list button:focus-visible { background: #cfe0ff; }
+        #tourist-map {
+            height: 480px;
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .route-info {
+            display: none;
+            margin-top: 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+        }
+        .route-info.visible { display: block; }
+        .route-info h3 { margin: 0 0 12px; font-size: 1.05rem; }
+        .route-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .route-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 54px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #dbeafe;
+            color: var(--primary-dark);
+            font-weight: 700;
+            border: 1px solid #bfd7ff;
+        }
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0,0,0,0); border: 0;
+        }
+        @media (max-width: 900px) {
+            .tourist-layout { grid-template-columns: 1fr; }
+            .container { padding: 20px 14px 40px; }
+            #tourist-map { height: 380px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header class="page-header" aria-label="Cabeçalho do sistema">
+            <h1>Rotas e pontos turísticos de Boituva</h1>
+            <p>Encontre locais, pontos de ônibus próximos e rotas a partir da rodoviária.</p>
+        </header>
+
+        <section class="panel" aria-label="Busca de locais">
+            <form data-search-form>
+                <label for="q">Digite um local ou ponto de referência</label>
+                <input id="q" name="q" type="search" list="place-options" placeholder="Ex.: Mercado, praça, parque..." aria-describedby="search-help" autocomplete="off">
+                <datalist id="place-options"></datalist>
+                <div class="tourist-search">
+                    <p class="tourist-search-label">Pontos turísticos</p>
+                    <ul id="tourist-search-list" class="tourist-search-list" aria-label="Sugestões de pontos turísticos"></ul>
+                </div>
+                <button type="submit">Buscar</button>
+            </form>
+            <p id="search-help" class="sr-only">A busca mostra o marco referencial e o ponto de ônibus mais próximos.</p>
+           <p class="status" data-status aria-live="polite">Carregando dados locais...</p>
+        </section>
+
+        <section class="tourist-layout" aria-label="Pontos turísticos e mapa">
+            <div class="tourist-list-panel">
+                <h2>Pontos turísticos</h2>
+                <p>Selecione um destino para visualizar a rota da rodoviária até ele.</p>
+                <ul id="tourist-list" class="tourist-list" aria-live="polite"></ul>
+            </div>
+            <div class="map-panel">
+                <h2>Mapa da rota</h2>
+                <div id="tourist-map" role="application" aria-label="Mapa com rota da rodoviária até o ponto turístico selecionado"></div>
+                <p id="route-status" aria-live="polite">Escolha um ponto turístico no painel para traçar a rota.</p>
+                <div id="route-info" class="route-info" aria-live="polite">
+                    <h3>Linhas de ônibus do ponto próximo</h3>
+                    <div id="route-lines" class="route-badges"></div>
+                </div>
+            </div>
+        </section>
+
+        <section data-results aria-live="polite"></section>
+    </main>
+    <script src="assets/leaflet/leaflet.js"></script>
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
