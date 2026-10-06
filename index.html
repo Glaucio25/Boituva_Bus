@@ -15,8 +15,10 @@
             --muted: #4b5563;
             --border: #d1d5db;
             --success: #0f766e;
+            --focus: #f59e0b;
         }
         * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             margin: 0;
             font-family: Arial, sans-serif;
@@ -24,10 +26,49 @@
             color: var(--text);
             line-height: 1.6;
         }
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        [tabindex]:focus-visible {
+            outline: 3px solid var(--focus);
+            outline-offset: 3px;
+        }
+        .skip-link {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            z-index: 1000;
+            background: var(--surface);
+            color: var(--text);
+            padding: 10px 16px;
+            border-radius: 0 0 8px 8px;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .skip-link:focus {
+            left: 16px;
+        }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 32px 20px 60px;
+        }
+        .main-nav {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 0;
+            padding: 0;
+        }
+        .main-nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .main-nav a:hover,
+        .main-nav a:focus-visible {
+            text-decoration: underline;
         }
         .page-header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
@@ -38,6 +79,32 @@
         }
         .page-header h1 { margin: 0 0 8px; }
         .page-header p { margin: 0; opacity: 0.95; }
+        .breadcrumb {
+            margin: 0 0 16px;
+        }
+        .breadcrumb-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            font-size: 0.96rem;
+        }
+        .breadcrumb-list li {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .breadcrumb-list a {
+            color: var(--primary-dark);
+            text-decoration: underline;
+        }
+        .breadcrumb-list li[aria-current="page"] {
+            color: var(--muted);
+            font-weight: 700;
+        }
         .panel, .tourist-list-panel, .map-panel {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -67,7 +134,6 @@
         }
         button:hover, button:focus-visible {
             background: var(--primary-dark);
-            outline: 3px solid rgba(29, 78, 216, 0.25);
         }
         .status { margin: 12px 0 0; color: var(--success); font-weight: 600; }
         .result-card {
@@ -155,6 +221,18 @@
             font-weight: 700;
             border: 1px solid #bfd7ff;
         }
+        .site-footer {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 32px;
+            color: var(--muted);
+        }
+        .site-footer nav {
+            margin-top: 8px;
+        }
+        .site-footer a {
+            color: var(--primary-dark);
+        }
         .sr-only {
             position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
             overflow: hidden; clip: rect(0,0,0,0); border: 0;
@@ -167,13 +245,31 @@
     </style>
 </head>
 <body>
-    <main class="container">
+    <a class="skip-link" href="#conteudo-principal" accesskey="1">Pular para o conteúdo principal</a>
+    <a class="skip-link" href="#lista-de-exemplos" accesskey="2">Pular para a lista de exemplos</a>
+
+    <main id="conteudo-principal" class="container" tabindex="-1">
+        <nav aria-label="Você está aqui" class="breadcrumb">
+            <ol class="breadcrumb-list">
+                <li><a href="#conteudo-principal">Início</a></li>
+                <li aria-current="page">Rotas e pontos turísticos</li>
+            </ol>
+        </nav>
+
         <header class="page-header" aria-label="Cabeçalho do sistema">
-            <h1>Rotas e pontos turísticos de Boituva</h1>
+            <nav aria-label="Navegação principal">
+                <ul class="main-nav">
+                    <li><a href="#conteudo-principal">Busca</a></li>
+                    <li><a href="#lista-de-exemplos">Pontos turísticos</a></li>
+                    <li><a href="#mapa-rotas">Mapa</a></li>
+                </ul>
+            </nav>
+            <h1 id="titulo-principal">Rotas e pontos turísticos de Boituva</h1>
             <p>Encontre locais, pontos de ônibus próximos e rotas a partir da rodoviária.</p>
         </header>
 
-        <section class="panel" aria-label="Busca de locais">
+        <section class="panel" aria-labelledby="titulo-busca">
+            <h2 id="titulo-busca" class="sr-only">Busca de locais</h2>
             <form data-search-form>
                 <label for="q">Digite um local ou ponto de referência</label>
                 <input id="q" name="q" type="search" list="place-options" placeholder="Ex.: Mercado, praça, parque..." aria-describedby="search-help" autocomplete="off">
@@ -189,24 +285,31 @@
         </section>
 
         <section class="tourist-layout" aria-label="Pontos turísticos e mapa">
-            <div class="tourist-list-panel">
-                <h2>Pontos turísticos</h2>
+            <section class="tourist-list-panel" id="lista-de-exemplos" aria-labelledby="titulo-pontos-turisticos">
+                <h2 id="titulo-pontos-turisticos">Pontos turísticos</h2>
                 <p>Selecione um destino para visualizar a rota da rodoviária até ele.</p>
                 <ul id="tourist-list" class="tourist-list" aria-live="polite"></ul>
-            </div>
-            <div class="map-panel">
-                <h2>Mapa da rota</h2>
+            </section>
+            <section class="map-panel" id="mapa-rotas" aria-labelledby="titulo-mapa">
+                <h2 id="titulo-mapa">Mapa da rota</h2>
                 <div id="tourist-map" role="application" aria-label="Mapa com rota da rodoviária até o ponto turístico selecionado"></div>
                 <p id="route-status" aria-live="polite">Escolha um ponto turístico no painel para traçar a rota.</p>
                 <div id="route-info" class="route-info" aria-live="polite">
                     <h3>Linhas de ônibus do ponto próximo</h3>
                     <div id="route-lines" class="route-badges"></div>
                 </div>
-            </div>
+            </section>
         </section>
 
         <section data-results aria-live="polite"></section>
     </main>
+
+    <footer class="site-footer">
+        <p>Boituva: rotas e pontos turísticos.</p>
+        <nav aria-label="Navegação de rodapé">
+            <a href="#conteudo-principal">Voltar ao topo</a>
+        </nav>
+    </footer>
     <script src="assets/leaflet/leaflet.js"></script>
     <script src="data.js"></script>
     <script src="app.js"></script>

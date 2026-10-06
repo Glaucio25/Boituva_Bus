@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeMap() {
         if (!window.L || !document.getElementById('tourist-map')) return;
-        map = L.map('tourist-map').setView([terminalLocation.lat, terminalLocation.lng], 13);
+        map = L.map('tourist-map', { keyboard: true }).setView([terminalLocation.lat, terminalLocation.lng], 13);
         L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors &copy; OSM DE',
             maxZoom: 19,
@@ -94,21 +94,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function populateSuggestions(query = '') {
         const term = normalize(query);
-        const matches = term
-            ? places.filter((place) => normalize(place.nome).includes(term)).slice(0, 40)
-            : touristPoints.slice(0, 40);
+        if (term.length < 3) {
+            placeOptions.replaceChildren();
+            return;
+        }
+        const matches = touristPoints.filter((point) => normalize(point.nome).startsWith(term)).slice(0, 40);
         placeOptions.replaceChildren();
-        matches.forEach((place) => {
+        matches.forEach((point) => {
             const option = document.createElement('option');
-            option.value = place.nome;
+            option.value = point.nome;
             placeOptions.appendChild(option);
         });
     }
 
     function renderTouristSearchList(query = '') {
         const term = normalize(query);
-        const visiblePoints = touristPoints.filter((point) => !term || normalize(point.nome).includes(term));
         touristSearchList.replaceChildren();
+        if (term.length < 3) {
+            return;
+        }
+        const visiblePoints = touristPoints.filter((point) => normalize(point.nome).startsWith(term));
         if (!visiblePoints.length) {
             addText(touristSearchList, 'li', 'Nenhum ponto turístico corresponde à busca.');
             return;
@@ -141,7 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
             button.type = 'button';
             button.textContent = point.nome;
             button.setAttribute('aria-label', `Mostrar rota para ${point.nome}`);
-            button.addEventListener('click', () => showRoute(point));
+            button.addEventListener('click', () => {
+                updateSelection(point);
+            });
             item.appendChild(button);
             touristList.appendChild(item);
         });
@@ -169,9 +176,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function findPlace(query) {
         const term = normalize(query);
-        const matching = places.filter((place) => normalize(place.nome).includes(term));
+        const matching = places.filter((place) => normalize(place.nome).startsWith(term));
         return matching.find((place) => normalize(place.nome) === term)
-            || matching.find((place) => normalize(place.nome).startsWith(term))
             || matching[0]
             || null;
     }
@@ -217,6 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
             card.appendChild(list);
         }
         resultBox.appendChild(card);
+    }
+
+    function updateSelection(place) {
+        renderSearchResult(place);
+        if (place && place.turistico) {
+            showRoute(place);
+        } else {
+            routeInfo.classList.remove('visible');
+            routeStatus.textContent = place
+                ? `Local encontrado: ${place.nome}. Selecione um ponto turístico para traçar a rota.`
+                : 'Escolha um ponto turístico no painel para traçar a rota.';
+        }
     }
 
     function renderLineBadges(codes) {
@@ -303,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             status.textContent = 'Busca concluída.';
             return;
         }
-        renderSearchResult(place);
+        updateSelection(place);
         status.textContent = 'Busca concluída com dados locais.';
     });
 
